@@ -1,0 +1,490 @@
+프로젝트 명:restex
+패키지:컨트롤러
+
+1.jackson databind, dataformat xml 추가
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.9.7</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-xml</artifactId>
+			<version>2.9.7</version>
+		</dependency>
+2.여러 라이브러리 추가
+3.제이유닛 4.12로
+
+4.웹 프로젝트 셋팅을  /로 바꾸기
+5.도메인에 스토어브이오
+package org.zerock.controller;
+
+import lombok.Data;
+
+@Data
+public class StoreVO {
+	
+	private Integer sno;
+	private String sname;
+	private double lat, lng;
+	private String menu;
+	
+
+}
+
+6.스토어컨트롤러
+
+@GetMapping("/sample")
+	public StoreVO get() {
+		
+		StoreVO vo = new StoreVO();
+		vo.setSno(1);
+		vo.setSname("김밥천국");
+		vo.setLat(37.123);
+		vo.setLng(123.4567);
+		
+		return vo;
+		
+	}
+
+7.하려면 xml 5.1.0ㅇ로 바꾸기
+<properties>
+		<java-version>1.6</java-version>
+		<org.springframework-version>5.1.0.RELEASE</org.springframework-version>
+		<org.aspectj-version>1.6.10</org.aspectj-version>
+		<org.slf4j-version>1.6.6</org.slf4j-version>
+	</properties>
+
+
+8. http://localhost:8080/store/sample 
+http://localhost:8080/store/sample.json
+http://localhost:8080/store/sample.xml
+화면에 데이터가 나옴
+
+
+----------------------------------------제이슨을 객체로 바꾸기
+1. 스토어컨트롤러
+	
+	@PostMapping("/new")
+	public String add(@RequestBody StoreVO vo) { //requestbody: 제이슨 데이터를 자바의 객체로 변환해주는 역할.
+		
+		//로그포 제이 추가 후
+		log.info("----------------");
+		log.info(vo);
+		
+		
+		return "success";
+	}//제이슨을 객체로 바꾸기 위한 것.
+
+2.레스트릿으로 테스트
+헤더:Content-Type:application/json
+body: json으로 하고 
+{"sno":123, "sname":"김밥천국"} 하고 센드 시 200 success
+콘솔창에 객체로 와 있음.
+
+------------------------------------------웹스톰과 스프링 간 JSON 데이터 주고 받기
+
+1.웹스톰
+boilerplate로 1023
+프로젝트 명:1023
+
+2.dist->인덱스.html
+
+<script>
+
+    $(document).ready(function(){
+      console.log("run...........");
+
+      $.getJSON("http://localhost:8080/store/sample",
+        function (data) {
+          console.log(data);
+        }
+      );
+    });
+
+  </script>
+
+3.스토어컨트롤러
+
+	@CrossOrigin(origins="*") //웹스톰과 연결 주고받기 ->추가
+	@GetMapping("/sample")
+	public StoreVO get() {
+		
+		StoreVO vo = new StoreVO();
+		vo.setSno(1);
+		vo.setSname("김밥천국");
+		vo.setLat(37.123);
+		vo.setLng(123.4567);
+		
+		return vo;
+		
+	}
+
+4. html 실행시 콘솔에 run이 찍힘
+
+=-----------------------------------------------------서비스
+1.스토어서비스 생성
+
+2.루트컨텍스트
+컨텍스트 체크 후 
+<context:component-scan base-package="org.zerock.service"></context:component-scan>
+3폼에 가서
+<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.5.1</version>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+					<compilerArgument>-Xlint:all</compilerArgument>
+					<showWarnings>true</showWarnings>
+					<showDeprecation>true</showDeprecation>
+				</configuration>
+			</plugin>
+변경
+4.스토어서비스
+@Service
+@Log4j
+@Data
+public class StoreService {
+	private List<StoreVO> list;
+	
+	public StoreService() {
+		list =  IntStream.range(1,10)
+				.mapToObj(i->{
+			
+			StoreVO vo = new StoreVO();
+			vo.setSno(i);
+			vo.setSname("가게"+i);
+			
+			
+			return vo;
+			
+		}).collect(Collectors.toList());
+			
+	}
+	
+	public StoreVO get(int idx) {
+		return list.get(idx);
+
+5.스토어컨트롤러
+쥬입하기
+@AllArgsConstructor //주입하기
+public class StoreController {
+	
+	//주입하기
+	private StoreService service;
+	
+	@GetMapping("/{idx}") //{이용시 파라미터 수집
+	public StoreVO get(@PathVariable("idx") int idx) {
+		
+		return service.get(idx);
+	}
+	}
+	
+6.
+http://localhost:8080/store/3.xml
+http://localhost:8080/store/3.json
+http://localhost:8080/store/3
+
+-----------------------삭제
+1.스토어 서비스
+
+	//해당 번호 삭제
+	public void remove(int idx) {
+		list.remove(idx);
+	}
+2.컨트롤러
+	@DeleteMapping("/{idx}")
+	public String remove(@PathVariable("idx") int idx) {
+		
+		log.info("remove........................." + idx);
+		service.remove(idx);
+		
+		return "success";
+	}
+
+3.웹스톰에
+
+  <script>
+
+    $(document).ready(function () {
+      console.log("run................");
+
+      $.getJSON("http://localhost:8080/store/sample",
+        function(data) {
+          console.log(data);
+        });
+    });
+
+
+    $("#removeBtn").on("click", function () {
+      $.ajax({
+        type:'delete',
+        url:'http://localhost:8080/store/3',
+        success:function (data) {
+          console.log(data);
+          alert("success");
+
+        }
+      });
+    });
+
+  </script>
+->오류남!!!
+
+------------------------------------------------ 싱글 페이지로 crud
+1.인덱스(바디 안에)
+
+<style>
+  *{
+    margin: 0px;
+    padding:0px;
+  }
+  .wrapper{
+    width:100%;
+    display: flex;
+
+    align-items: center;
+    flex-direction: column;
+    overflow: auto;
+
+  }
+  .panel{
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid darkorchid;
+    height: 800px;
+
+  }
+  .p1{
+    background-color: #b3d4fc;
+  }
+  .p2{
+    background-color: lightpink;
+  }
+  .p3{
+    background-color: lavenderblush;
+  }
+  .p4{
+    background-color: darkkhaki;
+  }
+
+  .menu{
+    position : absolute;
+    z-index: 100;
+  }
+</style>
+
+
+
+  <div class="wrapper">
+    <div class="menu">
+      <ul>
+        <li><a href="#p1">p1</a></li>
+        <li><a href="#p2">p2</a></li>
+        <li><a href="#p3">p3</a></li>
+        <li><a href="#p4">p4</a></li>
+      </ul>
+
+    </div>
+
+    <div id="p1" class="panel p1"></div>
+    <div id="p2" class="panel p2"></div>
+    <div id="p3" class="panel p3"></div>
+    <div id="p4" class="panel p4"></div>
+  </div>
+
+2.메인.js
+var todoService = (function () { //즉시실행함수
+
+  //서버에 제이슨으로 보낼 것.
+
+  var path="http://localhost:8080/todo/";
+
+  // 등록
+  function create(obj,callback) {
+
+    console.log(obj);
+    $.ajax({
+      type:"post",
+      data:JSON.stringify(obj), //제이슨문자열로 만드는 것
+      contentType: "application/json; charset=utf-8",
+      success: function (result, status, xhr) {
+        callback(result); //결과 넣어서 콜백 실행
+      }
+    });
+
+  }
+
+   return {create:create}
+
+})();
+
+4.인덱스
+
+  <script src="js/plugins.js"></script>
+
+
+
+  <script src="js/main.js"></script>  <!--여기를 작성-->
+  <script>
+    todoService.create({title:"점심미팅"},function (result) {
+      alert(result);
+
+    })
+  </script>
+-----------------------댓글 .. 메퍼 그만 만들어
+1.디비\
+#댓글 테이블
+create table tbl_reply(
+ rno int auto_increment primary key,
+ bno int not null,
+ reply varchar(500) not null,
+ replyer varchar(50) not null,
+ replyDate timestamp default now()
+)
+;
+
+2.리플라이브이오
+package org.zerock.domain;
+
+import java.util.Date;
+
+import lombok.Data;
+
+@Data
+public class ReplyVO {
+
+	private Integer rno,bno;
+	private String reply,replyer;
+	private Date replydate;
+}
+
+3.커먼메퍼.인터페이스로
+package org.zerock.mapper;
+
+import java.util.List;
+
+public interface CommonMapper<VO, PK> {
+	//crud 작업 한번에 하기. 편하게 할 수 있는 방법
+	public int create(VO vo);
+	public VO read(PK pk);
+	public int update(VO vo);
+	public int delete(PK pk);
+	public List<VO> list(int page);
+
+}
+
+4.리플라이메퍼. 커먼 상속
+package org.zerock.mapper;
+
+import org.zerock.domain.ReplyVO;
+
+public interface ReplyMapper extends CommonMapper<ReplyVO, Integer> {
+
+}
+
+5.리플라이메퍼.xml
+6.리플라이컨트롤ㄹ러
+package org.zerock.controller;
+
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.zerock.domain.ReplyVO;
+
+import lombok.extern.log4j.Log4j;
+
+@RestController
+@RequestMapping("/reply/*")
+@Log4j
+public class ReplyController {
+	
+	@PostMapping("/new")
+	public void register(ReplyVO vo) {
+		log.info("new : " + vo);
+	}
+
+}
+
+
+7.pom에 
+test, gson maven  추가
+8/투두컨트롤러테스트 추가
+
+9.리퀘스트바디로 바꾸기
+10.폼
+<!-- Servlet -->
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<version>3.1.0</version>
+			<scope>provided</scope>
+		</dependency>
+수정
+
+11.투두컨트롤러테스트
+package org.zerock.controller;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+import org.zerock.domain.ReplyVO;
+
+import com.google.gson.Gson;
+
+import lombok.Setter;
+import lombok.extern.log4j.Log4j;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@WebAppConfiguration
+@ContextConfiguration({"file:src/main/webapp/WEB-INF/spring/root-context.xml",
+						"file:src/main/webapp/WEB-INF/spring/appServlet/servlet-context.xml",
+})
+@Log4j
+public class TodoControllerTests {
+	
+	@Setter(onMethod_=@Autowired)
+	private WebApplicationContext ctx;
+	
+	private MockMvc mockMvc;//가짜 리퀘스트
+	
+	@Before //어스펙트 말고 제이유닛으로 넣기
+	public void setIp() {
+		
+		mockMvc = MockMvcBuilders.webAppContextSetup(ctx).build(); //가짜리퀘스트
+		
+	}
+	@Test
+	public void createTest()throws Exception {
+		
+		ReplyVO vo = new ReplyVO();
+		vo.setBno(123);
+		vo.setReply("대앳글..");
+		vo.setReplyer("jiiiiing");
+		
+		String str = new Gson().toJson(vo);
+		
+		System.out.println(str);
+		
+		mockMvc.perform(
+				post("/reply/new")
+				.contentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
+				.content(str)
+				);
+	}
+
+}
+
